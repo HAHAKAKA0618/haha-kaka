@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HahanKaka - 家庭相册</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(180deg, #f5f5f7 0%, #ffffff 100%);
+            min-height: 100vh;
+            color: #1d1d1f;
+        }
+
+        /* 头部 */
+        header {
+            padding: 60px 20px 40px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 42px;
+            font-weight: 600;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #ff6b6b, #ffa500, #ffd93d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 17px;
+            color: #86868b;
+            font-weight: 400;
+        }
+
+        /* 照片网格 */
+        .gallery {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .photo-card {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            background: #f0f0f0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+
+        .photo-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+        }
+
+        .photo-card img,
+        .photo-card video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .photo-card .video-indicator {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        /* 照片日期标签 */
+        .photo-card .date-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 40px 16px 16px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.5));
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* 全屏查看器 */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .lightbox.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .lightbox-content {
+            max-width: 90vw;
+            max-height: 90vh;
+            position: relative;
+        }
+
+        .lightbox-content img,
+        .lightbox-content video {
+            max-width: 90vw;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 12px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 36px;
+            color: white;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+            width: 50px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .lightbox-prev { left: 20px; }
+        .lightbox-next { right: 20px; }
+
+        /* 底部 */
+        footer {
+            text-align: center;
+            padding: 60px 20px;
+            color: #86868b;
+            font-size: 13px;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 100px 20px;
+        }
+
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .empty-text {
+            font-size: 21px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+
+        .empty-hint {
+            font-size: 15px;
+            color: #86868b;
+        }
+
+        /* 视频卡片样式 */
+        .photo-card.video-card {
+            aspect-ratio: 16/9;
+        }
+
+        /* 分类标签 */
+        .filter-bar {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 980px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: #e8e8ed;
+        }
+
+        .filter-btn.active {
+            background: #0071e3;
+            color: white;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            header { padding: 40px 16px 24px; }
+            .logo { font-size: 32px; }
+            .gallery {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                padding: 12px;
+            }
+            .photo-card { border-radius: 12px; }
+            .lightbox-nav { display: none; }
+        }
+
+        /* 上传提示（只有管理员可见） */
+        .admin-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1d1d1f;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .admin-hint { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 class="logo">HahanKaka</h1>
+        <p class="subtitle">家庭相册 · 记录每一个美好瞬间</p>
+    </header>
+
+    <nav class="filter-bar">
+        <button class="filter-btn active" data-filter="all">全部</button>
+        <button class="filter-btn" data-filter="photo">照片</button>
+        <button class="filter-btn" data-filter="video">视频</button>
+    </nav>
+
+    <main class="gallery" id="gallery">
+        <!-- 照片卡片会在这里动态生成 -->
+    </main>
+
+    <!-- 全屏查看器 -->
+    <div class="lightbox" id="lightbox">
+        <span class="lightbox-close" id="lightboxClose">×</span>
+        <span class="lightbox-nav lightbox-prev" id="lightboxPrev">‹</span>
+        <span class="lightbox-nav lightbox-next" id="lightboxNext">›</span>
+        <div class="lightbox-content" id="lightboxContent">
+            <!-- 内容动态生成 -->
+        </div>
+    </div>
+
+    <footer>
+        <p>Made with ♥ for HahanKaka</p>
+    </footer>
+
+    <script>
+        // =============================================
+        // 📸 相册数据 - 在这里添加照片和视频
+        // =============================================
+        const mediaData = [
+            // 示例照片 - 请替换为实际照片
+            {
+                type: 'photo',
+                src: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800', // 示例图片
+                thumb: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400',
+                date: '2026年3月25日',
+                caption: '快乐的一天'
+            },
+            {
+                type: 'photo',
+                src: 'https://images.unsplash.com/photo-1519452635265-7b1fbfd1e4e0?w=800',
+                thumb: 'https://images.unsplash.com/photo-1519452635265-7b1fbfd1e4e0?w=400',
+                date: '2026年3月24日',
+                caption: '户外玩耍'
+            },
+            {
+                type: 'photo',
+                src: 'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=800',
+                thumb: 'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=400',
+                date: '2026年3月23日',
+                caption: '生日派对'
+            },
+            {
+                type: 'video',
+                src: 'https://www.w3schools.com/html/mov_bbb.mp4',
+                thumb: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400',
+                date: '2026年3月22日',
+                caption: '第一次学走路'
+            },
+            {
+                type: 'photo',
+                src: 'https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?w=800',
+                thumb: 'https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?w=400',
+                date: '2026年3月21日',
+                caption: '第一次上幼儿园'
+            },
+            {
+                type: 'photo',
+                src: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=800',
+                thumb: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=400',
+                date: '2026年3月20日',
+                caption: '家庭日'
+            }
+        ];
+
+        // 当前过滤状态
+        let currentFilter = 'all';
+        let currentIndex = 0;
+        let filteredData = [...mediaData];
+
+        // 初始化相册
+        function initGallery() {
+            const gallery = document.getElementById('gallery');
+            
+            if (filteredData.length === 0) {
+                gallery.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📷</div>
+                        <p class="empty-text">还没有照片</p>
+                        <p class="empty-hint">联系管理员上传新照片吧</p>
+                    </div>
+                `;
+                return;
+            }
+
+            gallery.innerHTML = filteredData.map((item, index) => `
+                <div class="photo-card ${item.type === 'video' ? 'video-card' : ''}" 
+                     data-index="${index}"
+                     data-type="${item.type}">
+                    <img src="${item.thumb}" alt="${item.caption}" draggable="false">
+                    ${item.type === 'video' ? '<div class="video-indicator">▶</div>' : ''}
+                    <div class="date-label">${item.date}</div>
+                </div>
+            `).join('');
+
+            // 绑定点击事件
+            gallery.querySelectorAll('.photo-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    openLightbox(parseInt(card.dataset.index));
+                });
+            });
+        }
+
+        // 全屏查看器
+        function openLightbox(index) {
+            currentIndex = index;
+            const lightbox = document.getElementById('lightbox');
+            const content = document.getElementById('lightboxContent');
+            const item = filteredData[index];
+
+            if (item.type === 'video') {
+                content.innerHTML = `
+                    <video src="${item.src}" controls autoplay loop>
+                        您的浏览器不支持视频播放
+                    </video>
+                `;
+            } else {
+                content.innerHTML = `
+                    <img src="${item.src}" alt="${item.caption}">
+                `;
+            }
+
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            const content = document.getElementById('lightboxContent');
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+            content.innerHTML = '';
+        }
+
+        function navigateLightbox(direction) {
+            currentIndex += direction;
+            if (currentIndex < 0) currentIndex = filteredData.length - 1;
+            if (currentIndex >= filteredData.length) currentIndex = 0;
+            openLightbox(currentIndex);
+        }
+
+        // 过滤功能
+        function filterGallery(type) {
+            currentFilter = type;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === type);
+            });
+
+            // 过滤数据
+            filteredData = type === 'all' 
+                ? [...mediaData] 
+                : mediaData.filter(item => item.type === type);
+
+            initGallery();
+        }
+
+        // 防下载保护
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('dragstart', e => e.preventDefault());
+        
+        // 键盘导航
+        document.addEventListener('keydown', e => {
+            if (!document.getElementById('lightbox').classList.contains('active')) return;
+            
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') navigateLightbox(-1);
+            if (e.key === 'ArrowRight') navigateLightbox(1);
+        });
+
+        // 事件绑定
+        document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+        document.getElementById('lightboxPrev').addEventListener('click', () => navigateLightbox(-1));
+        document.getElementById('lightboxNext').addEventListener('click', () => navigateLightbox(1));
+        document.getElementById('lightbox').addEventListener('click', e => {
+            if (e.target.id === 'lightbox') closeLightbox();
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => filterGallery(btn.dataset.filter));
+        });
+
+        // 启动
+        initGallery();
+    </script>
+</body>
+</html>
